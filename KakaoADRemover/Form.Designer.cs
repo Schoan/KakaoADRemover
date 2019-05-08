@@ -28,20 +28,36 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.textBox = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
+            // 
+            // textBox
+            // 
+            this.textBox.Location = new System.Drawing.Point(13, 13);
+            this.textBox.Multiline = true;
+            this.textBox.Name = "textBox";
+            this.textBox.ReadOnly = true;
+            this.textBox.Size = new System.Drawing.Size(553, 519);
+            this.textBox.TabIndex = 0;
             // 
             // Form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(378, 144);
+            this.ClientSize = new System.Drawing.Size(578, 544);
+            this.Controls.Add(this.textBox);
             this.Name = "Form";
             this.Text = "Kakao AD Remover";
+            this.Load += new System.EventHandler(this.Form_Load);
+            this.Shown += new System.EventHandler(this.Form_Shown);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
+
+        private System.Windows.Forms.TextBox textBox;
     }
 }
 

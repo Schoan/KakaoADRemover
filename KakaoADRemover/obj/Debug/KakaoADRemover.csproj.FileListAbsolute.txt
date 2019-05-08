@@ -1,0 +1,9 @@
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\bin\Debug\KakaoADRemover.exe.config
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\bin\Debug\KakaoADRemover.exe
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\bin\Debug\KakaoADRemover.pdb
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\obj\Debug\KakaoADRemover.csprojResolveAssemblyReference.cache
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\obj\Debug\KakaoADRemover.Form.resources
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\obj\Debug\KakaoADRemover.Properties.Resources.resources
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\obj\Debug\KakaoADRemover.csproj.GenerateResource.Cache
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\obj\Debug\KakaoADRemover.exe
+C:\Users\schoa\Source\Repos\KakaoADRemover\KakaoADRemover\obj\Debug\KakaoADRemover.pdb
