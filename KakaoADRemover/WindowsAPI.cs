@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -64,6 +65,34 @@ namespace KakaoADRemover
             WM_GETTEXT = 0x000D
         }
 
+        // https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-setwindowpos
+        enum SetWindowsPosFlags : Int32
+        {
+            SWP_ASYNCWINDOSPOS = 0x4000,
+            SWP_DEFERERASE = 0x2000,
+            SWP_DRAWFRAME = 0x0020,
+            SWP_FRAMECHANGED = 0x0020,
+            SWP_HIDEWINDOW = 0x0080,
+            SWP_NOACTIVATE = 0x0010,
+            SWP_NOCOPYBITS = 0x0100,
+            SWP_NOMOVE = 0x0002,
+            SWP_NOOWNERZORDER = 0x0200,
+            SWP_NOREDRAW = 0x0008,
+            SWP_NOREPOSITION = 0x0200,
+            SWP_NOSENDCHANGING = 0x0400,
+            SWP_NOSIZE = 0x0001,
+            SWP_NOZORDER = 0x0004,
+            SWP_SHOWWINDOW = 0x0040
+        }
+
+        public static class hWndInsertAfter
+        {
+            public static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
+            public static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+            public static readonly IntPtr HWMD_TOP = new IntPtr(0);
+            public static readonly IntPtr HWMD_TOPMOST = new IntPtr(-1);
+        }
+
         public class WindowInfo
         {
             private const int MAX_CHARS = 64;
@@ -94,12 +123,12 @@ namespace KakaoADRemover
                 WindowInfo info = new WindowInfo();
                 info.handle = handle;
 
-                StringBuilder sbWindowTitle = new StringBuilder();
-                //SendMessage();
+                StringBuilder sbWindowTitle = new StringBuilder(64);
+                SendMessage(handle, (int)WindowMessages.WM_GETTEXT, (IntPtr)sbWindowTitle.Capacity, sbWindowTitle);
                 info.title = sbWindowTitle.ToString();
 
-                StringBuilder sbWindowClassName = new StringBuilder();
-                //GetClassName();
+                StringBuilder sbWindowClassName = new StringBuilder(64);
+                GetClassName(handle, sbWindowClassName, sbWindowClassName.Capacity);
                 info.classname = sbWindowClassName.ToString();
 
                 return info;
@@ -130,7 +159,12 @@ namespace KakaoADRemover
         [DllImport("user32.dll", EntryPoint = "GetDesktopWindow")]
         public static extern IntPtr GetDesktopWindow();
 
+        // https://www.pinvoke.net/default.aspx/user32.SetWindowPos
+        [DllImport("user32.dll", EntryPoint = "SetWindowPos")]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, int uFlags);
+
         // https://www.pinvoke.net/default.aspx/user32.FindWindowEx
+        // https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-setwindowpos
         [DllImport("user32.dll", EntryPoint = "FindWindowEx")]
         public static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
 
@@ -142,5 +176,31 @@ namespace KakaoADRemover
         [DllImport("user32.dll", SetLastError = true)]
         static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect); // pinvoke RECT 항목 참조하여 만들것...
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int Left;        // x position of upper-left corner
+            public int Top;         // y position of upper-left corner
+            public int Right;       // x position of lower-right corner
+            public int Bottom;      // y position of lower-right corner
+
+            public RECT(int left, int top, int right, int bottom)
+            {
+                this.Left = left;
+                this.Top = top;
+                this.Right = right;
+                this.Bottom = bottom;
+            }
+        }
+
+        public static Rectangle RECT2Rectangle(RECT rect)
+        {
+            return new Rectangle(rect.Left, rect.Top, rect.Right, rect.Bottom);
+        }
+
+        public static RECT Rectangle2RECT(Rectangle rectangle)
+        {
+            return new RECT(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Bottom);
+        }
     }
 }
