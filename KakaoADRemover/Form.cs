@@ -58,7 +58,6 @@ namespace KakaoADRemover
         private string openKakaoRegistryLocation()
         {
             string kakaoReg = null;
-            string kakaoPath = null;
             RegistryKey kakaoOpen = null;
 
             try
