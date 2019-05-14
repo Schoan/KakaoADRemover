@@ -160,6 +160,17 @@ namespace KakaoADRemover
             MessageBox.Show(msg, title, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
         }
 
+        /// <summary>
+        /// Show Custom Alert Messagebox only.
+        /// </summary>
+        /// <param name="ex">Exception</param>
+        public void Alert(string msg)
+        {
+            string title = "Alert ! " + msg;
+
+            MessageBox.Show(msg, title, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+        }
+
 
         /// <summary>
         /// Write the log and show alert messagebox.
@@ -169,6 +180,16 @@ namespace KakaoADRemover
         {
             Log(ex);
             Alert(ex);
+        }
+
+        /// <summary>
+        /// Write the custom log and show alert messagebox.
+        /// </summary>
+        /// <param name="ex">Exception</param>
+        public void Log_n_Alert(string msg)
+        {
+            Log(msg);
+            Alert(msg);
         }
 
         /// <summary>

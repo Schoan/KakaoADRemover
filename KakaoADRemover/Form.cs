@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 using System.Text.RegularExpressions;
+using System.IO;
+using System.Diagnostics;
 
 namespace KakaoADRemover
 {
@@ -16,7 +18,8 @@ namespace KakaoADRemover
     {
         Logger log = new Logger();
 
-        private string kakaoPath = "";
+        private string kakaoPath = null;
+        private string kakaoReg = null;
         private IntPtr kakaoWnd;
         
         /*
@@ -24,8 +27,9 @@ namespace KakaoADRemover
          * 
          * 0. hide 
          * 1. find kakao things
-         * 2. catch & kill
-         * 3. self destruct
+         * 2. catch 
+         * 3. kill
+         * 4. self destruct
          * 
          */
 
@@ -48,8 +52,23 @@ namespace KakaoADRemover
             guiLog("STEP 0 : HIDE this Program.");
             guiLogLine();
 
-            // goto Step 1
-            openKakaoRegistryLocation();
+            // step 1
+            kakaoReg = openKakaoRegistryLocation();
+            if(string.IsNullOrEmpty(kakaoReg))
+            {
+                log.Log_n_Alert("Kakaotalk Not Found.");
+                return;
+            }
+
+            // step 2
+            kakaoWnd = catchKakaoTalk(kakaoPath);
+            if(kakaoWnd == IntPtr.Zero)
+            {
+                log.Log_n_Alert("KakaoTalk Window Handler Not Found");
+                return;
+            }
+
+
         }
 
 
@@ -119,18 +138,75 @@ namespace KakaoADRemover
             return kakaoReg;
         }
 
-       public void guiLog(string msg)
-       {
+        private IntPtr catchKakaoTalk(string kakaotalkPath)
+        {
+            IntPtr handle = IntPtr.Zero;
+
+            if(string.IsNullOrEmpty(kakaotalkPath))
+            {
+                log.Log_n_Alert("KAKAOTALK PATH NOT FOUND");
+
+                return handle;
+            }
+
+            guiLog("CHECK KAKAOTALK PATH IS : " + kakaoPath);
+            FileInfo kakaoEXE = new FileInfo(kakaoPath);
+
+            if(!kakaoEXE.Exists)
+            {
+                log.Log_n_Alert("KAKAOTALK FILE NOT EXIST : " + kakaoPath);
+
+                return handle;
+            }
+
+            string kakaoEXEname = kakaoEXE.Name.ToLower();
+            if (!kakaoEXEname.Contains(".exe"))
+            {
+                log.Log_n_Alert("KAKAOTALK PATH IS SOMETHING WRONG : " + kakaoEXEname);
+
+                return handle;
+            }
+            else
+            {
+                kakaoEXEname = kakaoEXEname.Substring(0, kakaoEXEname.IndexOf(".exe"));
+            }
+
+            Process[] procs = Process.GetProcesses();
+            foreach (Process proc in procs)
+            {
+                if(kakaoEXEname.Equals(proc.ProcessName.ToLower()))
+                {
+                    try
+                    {
+                        if(kakaoEXE.FullName.Equals(proc.MainModule.FileName))
+                        {
+                            guiLog("process catch! : " + proc.MainWindowHandle.ToString());
+                            handle = proc.MainWindowHandle;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Log_n_Alert(ex);
+                    }
+                }
+
+            }
+
+            return handle;
+        }
+
+        public void guiLog(string msg)
+        {
             textBox.Invoke((MethodInvoker)delegate
             {
                 textBox.AppendText("\r\n" + msg);
                 textBox.ScrollToCaret();
             });
-       }
+        }
 
-       public void guiLogLine()
-       {
+        public void guiLogLine()
+        {
             guiLog("---------------------------");
-       }
+        }
     }
 }
