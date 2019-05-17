@@ -27,9 +27,8 @@ namespace KakaoADRemover
          * 
          * 0. hide 
          * 1. find kakao things
-         * 2. catch 
-         * 3. kill
-         * 4. self destruct
+         * 2. catch & kill
+         * 3. self destruct
          * 
          */
 
@@ -68,7 +67,13 @@ namespace KakaoADRemover
                 return;
             }
 
+            killKakaoADs(kakaoWnd);
+            // 2 반복 더이상 카카오톡 없을때까지 //
 
+            /*
+            Application.DoEvents();
+            this.Close();
+            */
         }
 
 
@@ -193,6 +198,80 @@ namespace KakaoADRemover
             }
 
             return handle;
+        }
+
+        public void killKakaoADs(IntPtr kakaoWnd)
+        {
+            int result = 0b0000;
+            string CLASSNAME_KAKAOTALK = "EVA_ChildWindow";
+            string CLASSNAME_KAKAOAD = "EVA_Window";
+            string[] CLASSNAME_AD_STRS = { "FAKE_WND_REACHPOP" }; // if have new ADs, add this. 
+            string[] TITLE_KAKAOTALK_STRS = { "카카오톡", "KakaoTalk" };
+
+            try
+            {
+                IntPtr hWndParent = WindowsAPI.GetWindowLongPtr(kakaoWnd, (int)WindowsAPI.WindowLongFlags.GWLP_HWNDPARENT);
+                bool isParentNull = IntPtr.Zero.Equals(hWndParent);
+                bool isparentDesktop = WindowsAPI.GetDesktopWindow().Equals(hWndParent);
+                bool isNotToolWindow = (WindowsAPI.GetWindowLongPtr(hWndParent, (int)WindowsAPI.WindowLongFlags.GWL_EXSTYLE).ToInt64() 
+                                     & (long)WindowsAPI.ExtendedWindowStyles.WS_EX_TOOLWINDOW) 
+                                     == 0L ;
+
+                if((isParentNull || isparentDesktop) && isNotToolWindow)
+                {
+                    guiLog("parent is vaild and not tool window");
+
+                    WindowsAPI.WindowInfo mainWndInfo = WindowsAPI.WindowInfo.getInfo(kakaoWnd);
+
+                    bool isKakaoWnd = false;
+
+                    if( CLASSNAME_KAKAOTALK.Equals(mainWndInfo.ClassName) ) //kakao main
+                    {
+                        foreach (string title in TITLE_KAKAOTALK_STRS)
+                        {
+                            if (title.Equals(mainWndInfo.Title))
+                            {
+                                isKakaoWnd = true;
+                                guiLog("Main Window FOUND : " + mainWndInfo.Title);
+
+                                break;
+                            }
+                        }
+                    }
+                    else // ADs.
+                    {
+                        foreach (string classname in CLASSNAME_AD_STRS)
+                        {
+                            if (classname.Equals(mainWndInfo.ClassName))
+                            {
+                                WindowsAPI.SendMessage(kakaoWnd, (int)WindowsAPI.WindowMessages.WM_CLOSE, 0, null);
+                                guiLog("AD CLOSED : " + mainWndInfo.ClassName);
+                            }
+                        }
+                    }
+
+                    if(isKakaoWnd)
+                    {
+                        WindowsAPI.RECT rectKakaoMain = new WindowsAPI.RECT();
+                        WindowsAPI.GetWindowRect(kakaoWnd, out rectKakaoMain);
+                        IntPtr hwndChildAd = WindowsAPI.FindWindowEx(kakaoWnd, IntPtr.Zero, CLASSNAME_KAKAOAD, null);
+                        guiLog("CHILD AD FOUND : " + WindowsAPI.WindowInfo.getInfo(hwndChildAd));
+
+                        if(!IntPtr.Zero.Equals(hwndChildAd))
+                        {
+                            WindowsAPI.ShowWindow(hwndChildAd, (int)WindowsAPI.ShowWindowCommands.SW_HIDE);
+                            IntPtr hwndFriendList = WindowsAPI.FindWindowEx(kakaoWnd, IntPtr.Zero, CLASSNAME_KAKAOTALK, null);
+                            WindowsAPI.SetWindowPos(hwndChildAd, WindowsAPI.hWndInsertAfter.HWND_BOTTOM, 0, 0, 0, 0, (int)WindowsAPI.SetWindowsPosFlags.SWP_NOMOVE);
+                            WindowsAPI.SetWindowPos(hwndFriendList, WindowsAPI.hWndInsertAfter.HWND_BOTTOM, 0, 0, (rectKakaoMain.Right - rectKakaoMain.Left), (rectKakaoMain.Bottom - rectKakaoMain.Top - 36), (int)WindowsAPI.SetWindowsPosFlags.SWP_NOMOVE);
+                        }
+                    }
+                }
+            } catch (Exception e)
+            {
+                log.Log_n_Alert(e);
+            }
+
+            
         }
 
         public void guiLog(string msg)

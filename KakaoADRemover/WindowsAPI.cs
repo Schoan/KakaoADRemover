@@ -11,7 +11,7 @@ namespace KakaoADRemover
     class WindowsAPI
     {
         // https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-setwindowlonga
-        enum WindowLongFlags : Int32
+        public enum WindowLongFlags : Int32
         {
             GWL_EXSTYLE = -20,
             GWLP_HINSTANCE = -6,
@@ -26,7 +26,7 @@ namespace KakaoADRemover
         }
 
         // https://docs.microsoft.com/en-us/windows/desktop/winmsg/extended-window-styles
-        enum ExtendedWindowStyles : Int64
+        public enum ExtendedWindowStyles : Int64
         {
             WS_EX_ACCEPTFILES = 0x00000010L,
             WS_EX_APPWINDOW = 0x00040000L,
@@ -59,14 +59,14 @@ namespace KakaoADRemover
 
         // https://docs.microsoft.com/en-us/windows/desktop/winmsg/window-notifications
         // https://docs.microsoft.com/en-us/windows/desktop/winmsg/window-messages
-        enum WindowMessages : Int32
+        public enum WindowMessages : Int32
         {
             WM_CLOSE = 0x0010,
             WM_GETTEXT = 0x000D
         }
 
         // https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-setwindowpos
-        enum SetWindowsPosFlags : Int32
+        public enum SetWindowsPosFlags : Int32
         {
             SWP_ASYNCWINDOSPOS = 0x4000,
             SWP_DEFERERASE = 0x2000,
@@ -83,6 +83,24 @@ namespace KakaoADRemover
             SWP_NOSIZE = 0x0001,
             SWP_NOZORDER = 0x0004,
             SWP_SHOWWINDOW = 0x0040
+        }
+
+        // https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-showwindow
+        public enum ShowWindowCommands
+        {
+            SW_FORCEMINIMIZE = 11,
+            SW_HIDE = 0,
+            SW_MAXIMIZE = 3,
+            SW_MINIMIZE = 6,
+            SW_RESTORE = 9,
+            SW_SHOW = 5,
+            SW_SHOWDEFAULT = 10,
+            SW_SHOWMAXIMIZED = 3,
+            SW_SWHOMINIMIZED = 2,
+            SW_SHOWMINNOACTIVE = 7,
+            SW_SHOWNA = 8,
+            SW_SHOWNOACTIVATE = 4,
+            SW_SHOWNORMAL = 1
         }
 
         public static class hWndInsertAfter
@@ -151,6 +169,25 @@ namespace KakaoADRemover
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, int wParam, IntPtr lParam);
 
+        // https://www.pinvoke.net/default.aspx/user32.getwindowlong
+        [DllImport("user32.dll", EntryPoint = "GetWindowLong")]
+        public static extern IntPtr GetWindowLongPtr32(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr")]
+        public static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+        public static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)
+        {
+            if (IntPtr.Size == 8)
+            {
+                return GetWindowLongPtr64(hWnd, nIndex);
+            }
+            else
+            {
+                return GetWindowLongPtr32(hWnd, nIndex);
+            }
+        }
+
         // https://www.pinvoke.net/default.aspx/user32.getclassname
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
@@ -174,7 +211,7 @@ namespace KakaoADRemover
 
         // https://www.pinvoke.net/default.aspx/user32.getwindowrect
         [DllImport("user32.dll", SetLastError = true)]
-        static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect); // pinvoke RECT 항목 참조하여 만들것...
+        public static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect); // pinvoke RECT 항목 참조하여 만들것...
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
