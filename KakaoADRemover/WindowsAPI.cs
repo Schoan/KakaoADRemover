@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -209,9 +210,35 @@ namespace KakaoADRemover
         [DllImport("user32.dll", EntryPoint = "ShowWindow")]
         public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+        // https://www.pinvoke.net/default.aspx/user32/EnumWindows.html
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, int lParam);
+
+        delegate bool EnumWindowsProc(IntPtr hWnd, int lParam);
+
+        static List<WindowInfo> processList = new List<WindowInfo>();
+        public static List<WindowInfo> GetWindowsProcs()
+        {
+            EnumWindowsProc callBackPtr = GetWindowHandle;
+            EnumWindows(callBackPtr, 0);
+
+            List<WindowInfo> procList = processList;
+
+            return procList;
+        }
+
+        private static bool GetWindowHandle(IntPtr windowHandle, int lParam)
+        {
+            WindowInfo info = WindowInfo.getInfo(windowHandle);
+            processList.Add(info);
+
+            return true;
+        }
+
         // https://www.pinvoke.net/default.aspx/user32.getwindowrect
         [DllImport("user32.dll", SetLastError = true)]
-        public static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect); // pinvoke RECT 항목 참조하여 만들것...
+        public static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect); 
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
