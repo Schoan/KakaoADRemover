@@ -19,11 +19,16 @@ namespace KakaoADRemover
     {
         Logger log = new Logger();
 
+        private WindowsAPI.WindowInfo kakaoProc;
         private string kakaoPath = null;
         private string kakaoReg = null;
-        private IntPtr kakaoWnd;
-        private List<IntPtr> kakaoWnd_list;
-        
+        //private string CLASSNAME_KAKAOROOM = "#32770";
+        private string CLASSNAME_KAKAOTALK = "EVA_Window_Dblclk";
+        private string CLASSNAME_KAKAOAD = "EVA_Window";
+        private string CLASSNAME_KAKAOFRIENDSLIST = "EVA_ChildWindow";
+        private string[] CLASSNAME_AD_STRS = { "FAKE_WND_REACHPOP" }; // if have new ADs, add this. 
+        private string[] TITLE_KAKAOTALK_STRS = { "카카오톡", "KakaoTalk" };
+
         /*
          * KaKao Ad Remover :: for windows
          * 
@@ -37,7 +42,6 @@ namespace KakaoADRemover
         public Form()
         {
             InitializeComponent();
-            kakaoWnd_list = new List<IntPtr>();
         }
 
         private void Form_Load(object sender, EventArgs e)
@@ -63,30 +67,17 @@ namespace KakaoADRemover
             }
 
             // step 2
-            
-            kakaoWnd = catchKakaoTalk(kakaoPath, kakaoWnd_list);
-
-            if(kakaoWnd == IntPtr.Zero)
+            if(!catchKakaoTalk(kakaoPath))
             {
                 log.Log_n_Alert("KakaoTalk Window Handler Not Found");
                 return;
             }
 
-            killKakaoADs(kakaoWnd);
-            
-            // 2 반복 더이상 카카오톡 없을때까지 //
+            killKakaoADs(kakaoProc.Handle);
 
-            if (kakaoWnd != IntPtr.Zero)
-            {
-                // 정상 종료 시퀀스
-                Application.DoEvents();
-                Close();
-            }
-            else
-            {
-                log.Log_n_Alert("KakaoTalk Window Handler Not Found");
-                return;
-            }
+            // 정상 종료 시퀀스
+            Application.DoEvents();
+            Close();
             
         }
 
@@ -157,10 +148,9 @@ namespace KakaoADRemover
             return kakaoReg;
         }
 
-        private IntPtr catchKakaoTalk(string kakaotalkPath, List<IntPtr> handle_list)
+        private bool catchKakaoTalk(string kakaotalkPath)
         {
-            IntPtr handle = IntPtr.Zero;
-
+            /*
             if(string.IsNullOrEmpty(kakaotalkPath))
             {
                 log.Log_n_Alert("KAKAOTALK PATH NOT FOUND");
@@ -189,137 +179,66 @@ namespace KakaoADRemover
             {
                 kakaoEXEname = kakaoEXEname.Substring(0, kakaoEXEname.IndexOf(".exe"));
             }
+            */
 
-            /*
-            Process[] procs = Process.GetProcesses();
-            foreach (Process proc in procs)
-            {
-                if(kakaoEXEname.Equals(proc.ProcessName.ToLower()))
-                {
-                    try
-                    {
-                        if(kakaoEXE.FullName.Equals(proc.MainModule.FileName))
-                        {
-                            guiLog("process catch! : " + proc.MainWindowHandle.ToString());
-                            handle_list.Add(proc.MainWindowHandle);
-                            handle = proc.MainWindowHandle;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Log_n_Alert(ex);
-                    }
-                }
-
-            }*/
+            bool isKakaoWnd = false;
 
             List<WindowsAPI.WindowInfo> procLists = WindowsAPI.GetWindowsProcs();
+
             foreach (WindowsAPI.WindowInfo proc in procLists)
             {
-                if (kakaoEXEname.Equals(proc.ProcessName.ToLower()))
+                if (CLASSNAME_KAKAOTALK.Equals(proc.ClassName)) // kakao main
                 {
-                    try
+                    foreach (string title in TITLE_KAKAOTALK_STRS)
                     {
-                        if (kakaoEXE.FullName.Equals(proc.MainModule.FileName))
+                        if (title.Equals(proc.Title))
                         {
-                            guiLog("process catch! : " + proc.MainWindowHandle.ToString());
-                            handle_list.Add(proc.MainWindowHandle);
-                            handle = proc.MainWindowHandle;
+                            guiLog("Main Window FOUND");
+                            isKakaoWnd = true;
+
+                            break;
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Log_n_Alert(ex);
                     }
                 }
 
+                if(isKakaoWnd)
+                {
+                    IntPtr hWndParent = WindowsAPI.GetWindowLongPtr(proc.Handle, (int)WindowsAPI.WindowLongFlags.GWLP_HWNDPARENT);
+                    bool isParentNull = IntPtr.Zero.Equals(hWndParent);
+                    bool isparentDesktop = WindowsAPI.GetDesktopWindow().Equals(hWndParent);
+                    bool isNotToolWindow = (WindowsAPI.GetWindowLongPtr(hWndParent, (int)WindowsAPI.WindowLongFlags.GWL_EXSTYLE).ToInt64()
+                                         & (long)WindowsAPI.ExtendedWindowStyles.WS_EX_TOOLWINDOW)
+                                         == 0L;
+
+                    if ((isParentNull || isparentDesktop) && isNotToolWindow)
+                    {
+                        guiLog("Main Window Vaildated");
+
+                        kakaoProc = proc;
+                        break;
+                    }
+                }
             }
 
-            return handle;
+            return isKakaoWnd;
         }
-
-        
 
         public void killKakaoADs(IntPtr kakaoWnd)
         {
             int result = 0b0000;
-            //string CLASSNAME_KAKAOROOM = "#32770";
-            string CLASSNAME_KAKAOTALK = "EVA_Window_Dblclk"; 
-            string CLASSNAME_KAKAOAD = "EVA_Window";
-            string CLASSNAME_KAKAOFRIENDSLIST = "EVA_ChildWindow";
-            string[] CLASSNAME_AD_STRS = { "FAKE_WND_REACHPOP" }; // if have new ADs, add this. 
-            string[] TITLE_KAKAOTALK_STRS = { "카카오톡", "KakaoTalk" };
-
-            try
-            {
-                IntPtr hWndParent = WindowsAPI.GetWindowLongPtr(kakaoWnd, (int)WindowsAPI.WindowLongFlags.GWLP_HWNDPARENT);
-                bool isParentNull = IntPtr.Zero.Equals(hWndParent);
-                bool isparentDesktop = WindowsAPI.GetDesktopWindow().Equals(hWndParent);
-                bool isNotToolWindow = (WindowsAPI.GetWindowLongPtr(hWndParent, (int)WindowsAPI.WindowLongFlags.GWL_EXSTYLE).ToInt64() 
-                                     & (long)WindowsAPI.ExtendedWindowStyles.WS_EX_TOOLWINDOW) 
-                                     == 0L ;
-
-                if((isParentNull || isparentDesktop) && isNotToolWindow) 
-                {
-                    WindowsAPI.WindowInfo mainWndInfo = WindowsAPI.WindowInfo.getInfo(kakaoWnd);
-
-                    bool isKakaoWnd = false;
-
-                    if( CLASSNAME_KAKAOTALK.Equals(mainWndInfo.ClassName) ) // kakao main
-                    {
-                        foreach (string title in TITLE_KAKAOTALK_STRS)
-                        {
-                            if (title.Equals(mainWndInfo.Title))
-                            {
-                                guiLog("Main Window FOUND : " + mainWndInfo.Title);
-                                isKakaoWnd = true;
-
-                                break;
-                            }
-                        }
-                    }
-                    /*
-                    else if ( CLASSNAME_KAKAOROOM.Equals(mainWndInfo.ClassName) ) // kakao chat room
-                    {
-                        guiLog("Chatting Room FOUND");
-
-
-                        isKakaoWnd = true;
-                    }
-                    else // ADs.
-                    {
-                        foreach (string classname in CLASSNAME_AD_STRS)
-                        {
-                            if (classname.Equals(mainWndInfo.ClassName))
-                            {
-                                WindowsAPI.SendMessage(kakaoWnd, (int)WindowsAPI.WindowMessages.WM_CLOSE, 0, null);
-                                guiLog("AD CLOSED : " + mainWndInfo.ClassName);
-                            }
-                        }
-                    }*/
-
-                    if(isKakaoWnd)
-                    {
-                        WindowsAPI.RECT rectKakaoMain = new WindowsAPI.RECT();
-                        WindowsAPI.GetWindowRect(kakaoWnd, out rectKakaoMain);
-                        IntPtr hwndChildAd = WindowsAPI.FindWindowEx(kakaoWnd, IntPtr.Zero, CLASSNAME_KAKAOAD, null);
-                        guiLog("CHILD AD FOUND : " + WindowsAPI.WindowInfo.getInfo(hwndChildAd));
-
-                        if(!IntPtr.Zero.Equals(hwndChildAd))
-                        {
-                            IntPtr hwndFriendList = WindowsAPI.FindWindowEx(kakaoWnd, IntPtr.Zero, CLASSNAME_KAKAOFRIENDSLIST, null);
-                            WindowsAPI.ShowWindow(hwndChildAd, (int)WindowsAPI.ShowWindowCommands.SW_HIDE);
-                            WindowsAPI.SetWindowPos(hwndChildAd, WindowsAPI.hWndInsertAfter.HWND_BOTTOM, 0, 0, 0, 0, (int)WindowsAPI.SetWindowsPosFlags.SWP_NOMOVE);
-                            WindowsAPI.SetWindowPos(hwndFriendList, WindowsAPI.hWndInsertAfter.HWND_BOTTOM, 0, 0, (rectKakaoMain.Right - rectKakaoMain.Left), (rectKakaoMain.Bottom - rectKakaoMain.Top - 36), (int)WindowsAPI.SetWindowsPosFlags.SWP_NOMOVE);
-                        }
-                    }
-                }
-            } catch (Exception e)
-            {
-                log.Log_n_Alert(e);
-            }
-
             
+            WindowsAPI.RECT rectKakaoMain = new WindowsAPI.RECT();
+            WindowsAPI.GetWindowRect(kakaoWnd, out rectKakaoMain);
+            IntPtr hwndChildAd = WindowsAPI.FindWindowEx(kakaoWnd, IntPtr.Zero, CLASSNAME_KAKAOAD, null);
+            guiLog("CHILD AD FOUND : " + WindowsAPI.WindowInfo.getInfo(hwndChildAd));
+
+            if(!IntPtr.Zero.Equals(hwndChildAd))
+            {
+                IntPtr hwndFriendList = WindowsAPI.FindWindowEx(kakaoWnd, IntPtr.Zero, CLASSNAME_KAKAOFRIENDSLIST, null);
+                WindowsAPI.ShowWindow(hwndChildAd, (int)WindowsAPI.ShowWindowCommands.SW_HIDE);
+                WindowsAPI.SetWindowPos(hwndChildAd, WindowsAPI.hWndInsertAfter.HWND_BOTTOM, 0, 0, 0, 0, (int)WindowsAPI.SetWindowsPosFlags.SWP_NOMOVE);
+                WindowsAPI.SetWindowPos(hwndFriendList, WindowsAPI.hWndInsertAfter.HWND_BOTTOM, 0, 0, (rectKakaoMain.Right - rectKakaoMain.Left), (rectKakaoMain.Bottom - rectKakaoMain.Top - 36), (int)WindowsAPI.SetWindowsPosFlags.SWP_NOMOVE);
+            }
         }
 
         public void guiLog(string msg)
